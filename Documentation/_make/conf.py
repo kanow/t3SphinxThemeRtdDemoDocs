@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# mb, 2015-10-01, 2015-11-05
+# mb, 2015-10-01, 2016-09 14
 
 # This file lives at https://github.com/marble/typo3-docs-typo3-org-resources/blob/master/userroot/scripts/bin/conf-2015-10.py
 # Check for a new version!
+
+# 2016-09-14 load t3SphinxThemeRtd (>= 3.6.3) as Sphinx extension
+# 2016-09-04 update extlinks Forge and Review
+# 2016-05-27 turn off smartypants
 
 # Generic conf.py for ALL projects.
 # Project specific settings should be in:
@@ -25,13 +29,12 @@ from pygments.lexers.web import PhpLexer
 lexers['php'] = PhpLexer(startinline=True)
 lexers['php-annotations'] = PhpLexer(startinline=True)
 
-
-sys.path.append(os.path.abspath('..'))
-sys.path.append(os.path.abspath('../test_py_module'))
-
-
 # a dictionary to take notes while we do this processing
 notes = {}
+
+# settings from Overrides.cfg
+OVERRIDES = {}
+
 
 # PART 1: preparations
 
@@ -89,7 +92,9 @@ if not os.path.exists(masterdocabspath + '.rst'):
     sys.stdout.write('Can\'t find MASTERDOC ' + masterdocabspath + '.rst\n')
     sys.exit(1)
 
-if not os.path.isabs(LOGDIR):
+if os.path.isabs(LOGDIR):
+    logdirabspath = LOGDIR
+else:
     logdirabspath = os.path.abspath(LOGDIR)
 logdirabspath = os.path.normpath(logdirabspath)
 
@@ -145,6 +150,7 @@ extensions_to_be_loaded = [
     'sphinxcontrib.t3fieldlisttable',
     'sphinxcontrib.t3tablerows',
     'sphinxcontrib.t3targets',
+    't3SphinxThemeRtd',
 ]
 
 # Legal extensions will be loaded if requested in Settings.cfg
@@ -202,6 +208,7 @@ if 0 and 'enable this as soon as t3SphinxTheme knows the settings':
 html_use_opensearch = '' # like: 'https://docs.typo3.org/typo3cms/TyposcriptReference/0.0'  no trailing slash!
 
 highlight_language = 'php'
+html_use_smartypants = False
 language = None
 master_doc = 'Index'
 pygments_style = 'sphinx'
@@ -212,8 +219,9 @@ todo_include_todos = False
 extensions = extensions_to_be_loaded[:]
 
 extlinks = {}
-extlinks['forge' ] = ('https://forge.typo3.org/issues/%s', 'forge: ')
-extlinks['review'] = ('https://review.typo3.org/%s', 'review: ')
+extlinks['forge' ] = ('https://forge.typo3.org/issues/%s', 'Forge #')
+extlinks['issue' ] = ('https://forge.typo3.org/issues/%s', 'Issue #')
+extlinks['review'] = ('https://review.typo3.org/%s', 'Review #')
 
 intersphinx_mapping = {}
 
@@ -231,15 +239,16 @@ def updateModuleGlobals(GLOBALS, US):
     # add extensions from user settings if legal
     if US.has_key('extensions'):
         for k,e in US['extensions'].items():
-            if e in legal_extensions and not e in GLOBALS['extensions']:
-                GLOBALS['extensions'].append(e)
+            if not e in GLOBALS['extensions']:
+                if (e in legal_extensions) or (US is OVERRIDES):
+                    GLOBALS['extensions'].append(e)
 
     if US.has_key('extlinks'):
         for k, v in US['extlinks'].items():
             # untested!
             # we expect:
             #     forge = https://forge.typo3.org/issues/%s | forge:
-            GLOBALS['extlinks']['k'] = (v.split('|')[0].strip(), v.split('|')[1].strip())
+            GLOBALS['extlinks'][k] = (v.split('|')[0].strip(), v.split('|')[1].strip())
 
     if US.has_key('intersphinx_mapping'):
         for k, v in US['intersphinx_mapping'].items():
@@ -379,9 +388,6 @@ elif type(html_theme_options['use_opensearch']) in [type(''), type(u'')]:
 # If MAKEDIR/Overrides.cfg exists:
 # Set all settings thereby overriding existing ones.
 # So the admin has the last word
-
-# settings from Overrides.cfg
-OVERRIDES = {}
 
 if notes['Overrides.cfg exists']:
     config = ConfigParser.RawConfigParser()
